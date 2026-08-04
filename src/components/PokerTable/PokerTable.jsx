@@ -108,10 +108,18 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
     updatedPlayers[sbIdx].chipCount -= sbAmt;
     updatedPlayers[sbIdx].currentBet = sbAmt;
     updatedPlayers[sbIdx].lastAction = `SB $${sbAmt}`;
+    if (updatedPlayers[sbIdx].chipCount <= 0) {
+      updatedPlayers[sbIdx].chipCount = 0;
+      updatedPlayers[sbIdx].isAllIn = true;
+    }
 
     updatedPlayers[bbIdx].chipCount -= bbAmt;
     updatedPlayers[bbIdx].currentBet = bbAmt;
     updatedPlayers[bbIdx].lastAction = `BB $${bbAmt}`;
+    if (updatedPlayers[bbIdx].chipCount <= 0) {
+      updatedPlayers[bbIdx].chipCount = 0;
+      updatedPlayers[bbIdx].isAllIn = true;
+    }
 
     const initialPot = sbAmt + bbAmt;
     const initialHighestBet = Math.max(sbAmt, bbAmt);
@@ -157,6 +165,12 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
       newPot += callAmt;
       newPlayers[currentTurnIdx].lastAction = `CALL $${callAmt}`;
       actionText = `${player.name} calls $${callAmt}.`;
+
+      if (newPlayers[currentTurnIdx].chipCount <= 0) {
+        newPlayers[currentTurnIdx].chipCount = 0;
+        newPlayers[currentTurnIdx].isAllIn = true;
+        actionText = `${player.name} calls ALL-IN ($${callAmt})!`;
+      }
     } else if (action === 'raise') {
       const raiseTotal = Math.min(amount, player.chipCount + player.currentBet);
       const addedChips = raiseTotal - player.currentBet;
@@ -168,6 +182,12 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
       newMinRaise = raiseTotal + (raiseTotal - highestBet);
       newPlayers[currentTurnIdx].lastAction = `RAISE $${raiseTotal}`;
       actionText = `${player.name} raises to $${raiseTotal}!`;
+
+      if (newPlayers[currentTurnIdx].chipCount <= 0) {
+        newPlayers[currentTurnIdx].chipCount = 0;
+        newPlayers[currentTurnIdx].isAllIn = true;
+        actionText = `${player.name} goes ALL-IN for $${raiseTotal}!`;
+      }
 
       // When a player raises, all other active non-allin players must respond
       newPlayers = newPlayers.map((p, idx) => 
@@ -536,18 +556,6 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
 
       {/* Bottom Action Controls & Live Coach */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start max-w-5xl mx-auto w-full">
-        {showCoach && heroPlayer && (
-          <LiveCoach
-            heroCards={heroPlayer.holeCards}
-            communityCards={communityCards}
-            numOpponents={players.filter(p => !p.isFolded).length - 1}
-            amountToCall={highestBet - heroPlayer.currentBet}
-            currentPot={pot}
-            position={heroPlayer.position}
-            isMyTurn={isHeroTurn}
-          />
-        )}
-
         {isHeroTurn && heroPlayer && (
           <ActionControls
             onAction={handlePlayerAction}
@@ -557,6 +565,18 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
             currentPot={pot}
             playerChipCount={heroPlayer.chipCount}
             canCheck={highestBet === heroPlayer.currentBet}
+          />
+        )}
+
+        {showCoach && heroPlayer && (
+          <LiveCoach
+            heroCards={heroPlayer.holeCards}
+            communityCards={communityCards}
+            numOpponents={players.filter(p => !p.isFolded).length - 1}
+            amountToCall={highestBet - heroPlayer.currentBet}
+            currentPot={pot}
+            position={heroPlayer.position}
+            isMyTurn={isHeroTurn}
           />
         )}
       </div>

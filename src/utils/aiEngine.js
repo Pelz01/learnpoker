@@ -133,7 +133,7 @@ function mediumBotStrategy({ holeCards, communityCards, currentPot, amountToCall
 // ---------------- HARD BOT (BALANCED GTO STRATEGIST) ----------------
 function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet, position, activePlayers, highestBet, bigBlind }) {
   const numOpponents = Math.max(activePlayers.length - 1, 1);
-  const { winPercent, tiePercent } = simulateEquity(holeCards, communityCards, numOpponents, 400);
+  const { winPercent, tiePercent } = simulateEquity(holeCards, communityCards, numOpponents, 500);
   const totalEquity = winPercent + (tiePercent * 0.5);
   const { requiredEquity } = calculatePotOdds(amountToCall, currentPot);
 
@@ -143,19 +143,23 @@ function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
     const r2 = holeCards[1].rank;
     const isPair = r1 === r2;
     const maxRank = Math.max(r1, r2);
+    const minRank = Math.min(r1, r2);
     const isSuited = holeCards[0].suit === holeCards[1].suit;
 
-    // Premium hands: AA, KK, QQ, JJ, AK
-    const isPremium = (isPair && r1 >= 11) || (maxRank === 14 && Math.min(r1, r2) >= 13);
+    // Premium hands: AA, KK, QQ, JJ, TT, AK, AQ
+    const isPremium = (isPair && r1 >= 10) || (maxRank === 14 && minRank >= 12);
     if (isPremium) {
-      const raiseSizing = Math.min(Math.max(bigBlind * 2.5, highestBet * 2.2, minRaise), chipCount);
-      return { action: 'raise', amount: raiseSizing, reason: 'Hard AI raising strong preflop range' };
+      const raiseSizing = Math.min(Math.max(bigBlind * 2.5, highestBet * 2.2, minRaise), chipCount + (botCurrentBet || 0));
+      if (raiseSizing > highestBet) {
+        return { action: 'raise', amount: raiseSizing, reason: 'Hard AI raising premium preflop hand' };
+      }
+      return { action: 'call', amount: amountToCall, reason: 'Hard AI calling preflop with premium' };
     }
 
     // Positional Open Ranges
     let inOpeningRange = false;
     if (position === 'BTN' || position === 'CO') {
-      inOpeningRange = isPair || maxRank >= 10 || (isSuited && maxRank >= 8);
+      inOpeningRange = isPair || maxRank >= 10 || (isSuited && maxRank >= 8) || (minRank >= 9);
     } else if (position === 'MP') {
       inOpeningRange = isPair || maxRank >= 11 || (isSuited && maxRank >= 10);
     } else { // UTG / Blinds
@@ -168,38 +172,59 @@ function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
         return { action: 'raise', amount: raiseSizing, reason: `Hard AI opening ${position} range` };
       }
       if (amountToCall <= bigBlind * 3) {
-        return { action: 'call', amount: amountToCall, reason: 'Hard AI defending position' };
+        return { action: 'call', amount: amountToCall, reason: 'Hard AI calling standard preflop open' };
       }
     }
 
     if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Hard AI checking option' };
-    return { action: 'fold', amount: 0, reason: 'Hard AI folding preflop' };
+    return { action: 'fold', amount: 0, reason: 'Hard AI folding weak preflop hand' };
   }
 
   // Postflop Strategy
-  // If facing a big bet with medium equity, hard bot respects bets & folds
-  if (amountToCall > bigBlind * 3.5 && totalEquity < 55) {
-    return { action: 'fold', amount: 0, reason: `Hard AI folding to strong bet (${totalEquity.toFixed(0)}% equity)` };
+  // 1. FREE TO ACT (amountToCall === 0)
+  if (amountToCall === 0) {
+    // Monster hand (Equity >= 75%) -> Value Bet 0.5x Pot
+    if (totalEquity >= 75) {
+      const betSize = Math.min(Math.max(Math.round(currentPot * 0.55), minRaise), chipCount);
+      if (betSize > 0) return { action: 'raise', amount: betSize, reason: `Hard AI value betting monster (${totalEquity.toFixed(0)}% equity)` };
+    }
+    // Good hand (Equity >= 55%) -> Continuation bet 0.4x pot or check
+    if (totalEquity >= 55) {
+      if (Math.random() < 0.65) {
+        const cBet = Math.min(Math.max(Math.round(currentPot * 0.4), minRaise), chipCount);
+        if (cBet > 0) return { action: 'raise', amount: cBet, reason: `Hard AI continuation betting (${totalEquity.toFixed(0)}% equity)` };
+      }
+      return { action: 'check', amount: 0, reason: 'Hard AI checking solid hand' };
+    }
+    // Semi-bluff with draw (Equity >= 40%) -> 30% chance to semi-bluff raise
+    if (totalEquity >= 40 && Math.random() < 0.3) {
+      const bluffAmt = Math.min(Math.max(Math.round(currentPot * 0.45), minRaise), chipCount);
+      if (bluffAmt > 0) return { action: 'raise', amount: bluffAmt, reason: 'Hard AI semi-bluffing strong draw' };
+    }
+    return { action: 'check', amount: 0, reason: 'Hard AI checking free card' };
   }
 
-  // 1. Monster Hand (Total Equity >= 70%)
-  if (totalEquity >= 70) {
-    const betSize = Math.min(Math.round(currentPot * 0.5), chipCount);
-    const raiseAmt = Math.min(Math.max(amountToCall + minRaise, betSize), chipCount);
-    return { action: 'raise', amount: raiseAmt, reason: `Hard AI value-betting monster hand (${totalEquity.toFixed(0)}% equity)` };
+  // 2. FACING A BET (amountToCall > 0)
+  // Fold to large over-bets if equity is mediocre
+  if (amountToCall > bigBlind * 4 && totalEquity < 50) {
+    return { action: 'fold', amount: 0, reason: `Hard AI folding to heavy bet (${totalEquity.toFixed(0)}% equity)` };
   }
 
-  // 2. Strong Hand (Equity 50% - 69%)
-  if (totalEquity >= 50) {
-    if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Hard AI checking solid hand' };
-    if (amountToCall <= chipCount) return { action: 'call', amount: amountToCall, reason: 'Hard AI calling with positive EV' };
+  // Monster hand (Equity >= 75%) -> Raise/Re-raise for value!
+  if (totalEquity >= 75) {
+    const raiseAmt = Math.min(Math.max(amountToCall + minRaise, Math.round(currentPot * 0.6)), chipCount);
+    if (raiseAmt > amountToCall && chipCount > amountToCall) {
+      return { action: 'raise', amount: raiseAmt, reason: `Hard AI re-raising monster (${totalEquity.toFixed(0)}% equity)` };
+    }
+    return { action: 'call', amount: amountToCall, reason: `Hard AI calling with monster (${totalEquity.toFixed(0)}% equity)` };
   }
 
-  // 3. Draw / Semi-Bluff (Equity >= Pot Odds Required)
-  if (totalEquity >= requiredEquity && amountToCall <= chipCount) {
-    return { action: 'call', amount: amountToCall, reason: `Hard AI calling: ${totalEquity.toFixed(0)}% equity vs ${requiredEquity}% pot odds` };
+  // Strong hand or EV positive call (Total Equity >= Pot Odds Required)
+  if (totalEquity >= requiredEquity || totalEquity >= 48) {
+    if (amountToCall <= chipCount) {
+      return { action: 'call', amount: amountToCall, reason: `Hard AI calling: ${totalEquity.toFixed(0)}% equity meets pot odds (${requiredEquity}%)` };
+    }
   }
 
-  if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Hard AI checking option' };
-  return { action: 'fold', amount: 0, reason: `Hard AI folding: ${totalEquity.toFixed(0)}% equity insufficient` };
+  return { action: 'fold', amount: 0, reason: `Hard AI folding: ${totalEquity.toFixed(0)}% equity below required odds (${requiredEquity}%)` };
 }
