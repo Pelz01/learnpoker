@@ -84,7 +84,7 @@ export default function PokerTable({ onUpdateBankroll }) {
     let deckIdx = 0;
 
     const updatedPlayers = currentPlayersList.map((p) => {
-      if (p.chipCount <= 0) return { ...p, isFolded: true, holeCards: [] };
+      if (p.chipCount <= 0) return { ...p, isFolded: true, holeCards: [], hasActed: true };
       const c1 = newDeck[deckIdx++];
       const c2 = newDeck[deckIdx++];
       return {
@@ -93,6 +93,7 @@ export default function PokerTable({ onUpdateBankroll }) {
         isFolded: false,
         isAllIn: false,
         currentBet: 0,
+        hasActed: false,
         lastAction: ''
       };
     });
@@ -138,6 +139,9 @@ export default function PokerTable({ onUpdateBankroll }) {
     let newMinRaise = minRaise;
     let actionText = '';
 
+    // Mark current player as having acted in this street
+    newPlayers[currentTurnIdx].hasActed = true;
+
     if (action === 'fold') {
       newPlayers[currentTurnIdx].isFolded = true;
       newPlayers[currentTurnIdx].lastAction = 'FOLD';
@@ -163,6 +167,11 @@ export default function PokerTable({ onUpdateBankroll }) {
       newMinRaise = raiseTotal + (raiseTotal - highestBet);
       newPlayers[currentTurnIdx].lastAction = `RAISE $${raiseTotal}`;
       actionText = `${player.name} raises to $${raiseTotal}!`;
+
+      // When a player raises, all other active non-allin players must respond
+      newPlayers = newPlayers.map((p, idx) => 
+        idx === currentTurnIdx || p.isFolded || p.isAllIn ? p : { ...p, hasActed: false }
+      );
     }
 
     setPlayers(newPlayers);
@@ -185,7 +194,7 @@ export default function PokerTable({ onUpdateBankroll }) {
     const playersWhoCanAct = activePlayers.filter(p => !p.isAllIn && p.chipCount > 0);
 
     const isBettingComplete = activePlayers.every(p => 
-      p.isAllIn || p.currentBet === targetHighestBet
+      p.isAllIn || (p.hasActed && p.currentBet === targetHighestBet)
     );
 
     if (isBettingComplete || playersWhoCanAct.length <= 1) {
@@ -200,7 +209,7 @@ export default function PokerTable({ onUpdateBankroll }) {
   };
 
   const progressStreet = (currentPlayersList) => {
-    const resetBetsList = currentPlayersList.map(p => ({ ...p, currentBet: 0 }));
+    const resetBetsList = currentPlayersList.map(p => ({ ...p, currentBet: 0, hasActed: false }));
     setPlayers(resetBetsList);
     setHighestBet(0);
     setMinRaise(gameConfig.blinds.bb);
