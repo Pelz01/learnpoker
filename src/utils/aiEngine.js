@@ -30,7 +30,7 @@ export function makeAiDecision({
   if (difficulty === 'easy') {
     return easyBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet });
   } else if (difficulty === 'hard') {
-    return hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet, position, activePlayers, highestBet, bigBlind });
+    return hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet, position, activePlayers, highestBet, bigBlind, botCurrentBet });
   } else {
     return mediumBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet, position, highestBet, bigBlind });
   }
@@ -131,7 +131,7 @@ function mediumBotStrategy({ holeCards, communityCards, currentPot, amountToCall
 }
 
 // ---------------- HARD BOT (BALANCED GTO STRATEGIST) ----------------
-function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet, position, activePlayers, highestBet, bigBlind }) {
+function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet, position, activePlayers, highestBet, bigBlind, botCurrentBet = 0 }) {
   const numOpponents = Math.max(activePlayers.length - 1, 1);
   const { winPercent, tiePercent } = simulateEquity(holeCards, communityCards, numOpponents, 500);
   const totalEquity = winPercent + (tiePercent * 0.5);

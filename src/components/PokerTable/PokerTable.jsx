@@ -8,6 +8,7 @@ import GameSetupModal from './GameSetupModal';
 import { soundEffects } from '../../utils/audioService';
 import { createDeck, shuffleDeck, evaluate7CardHand } from '../../utils/pokerEvaluator';
 import { makeAiDecision } from '../../utils/aiEngine';
+import { findNextActivePlayerIdx, isBettingRoundComplete, applyPlayerAction } from '../../utils/gameRules';
 import { Bot, RefreshCw, Eye, Sparkles, Settings, Coins, Pause, Play, ArrowLeft, Zap } from 'lucide-react';
 
 export default function PokerTable({ onUpdateBankroll, onGoBack }) {
