@@ -327,7 +327,7 @@ export default function PokerTable({ onUpdateBankroll }) {
   const isHeroTurn = players[currentTurnIdx]?.isHuman && currentStreet !== 'showdown';
 
   return (
-    <div className="relative min-h-[85vh] flex flex-col justify-between p-2 sm:p-4 space-y-4 font-sans">
+    <div className="relative w-full flex flex-col justify-between p-1 sm:p-2 space-y-2 font-sans max-w-5xl mx-auto">
       
       {/* Game Setup Modal */}
       <GameSetupModal
@@ -337,51 +337,51 @@ export default function PokerTable({ onUpdateBankroll }) {
       />
 
       {/* Top Bar: Table Info & Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 border-2 border-amber-500/40 p-3 rounded-2xl backdrop-blur-md shadow-2xl">
-        <div className="flex items-center space-x-3 text-xs font-bold text-slate-200">
-          <span className="flex items-center gap-1.5">
-            <Bot className="w-4 h-4 text-amber-400" />
-            Bot Difficulty: <strong className="text-amber-300 uppercase font-black">{gameConfig.difficulty}</strong>
+      <div className="flex items-center justify-between gap-1.5 bg-slate-900/90 border border-amber-500/30 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-xl text-xs font-bold text-slate-200">
+        <div className="flex items-center space-x-2 text-[11px] sm:text-xs">
+          <span className="flex items-center gap-1">
+            <Bot className="w-3.5 h-3.5 text-amber-400" />
+            <strong className="text-amber-300 uppercase font-black">{gameConfig.difficulty}</strong>
           </span>
           <span className="text-slate-700">|</span>
           <span>Blinds: <strong className="text-emerald-400 font-extrabold">${gameConfig.blinds.sb}/${gameConfig.blinds.bb}</strong></span>
           <span className="text-slate-700">|</span>
-          <span>Main Pot: <strong className="text-amber-300 font-black">${pot}</strong></span>
+          <span>Pot: <strong className="text-amber-300 font-black">${pot}</strong></span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5">
           <button
             onClick={() => setShowCoach(!showCoach)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center space-x-1.5 transition-all ${
-              showCoach ? 'bg-amber-500 text-slate-950 shadow-lg' : 'bg-slate-800 text-slate-400'
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center space-x-1 transition-all ${
+              showCoach ? 'bg-amber-500 text-slate-950 shadow' : 'bg-slate-800 text-slate-400'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>AI Coach</span>
+            <Sparkles className="w-3 h-3" />
+            <span className="hidden sm:inline">AI Coach</span>
           </button>
 
           <button
             onClick={() => setSetupModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold flex items-center space-x-1"
+            className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white text-[11px] font-bold flex items-center space-x-1"
           >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Configure</span>
+            <Settings className="w-3 h-3" />
+            <span className="hidden sm:inline">Config</span>
           </button>
         </div>
       </div>
 
-      {/* REALISTIC HIGH-STAKES OVAL CASINO POKER TABLE */}
-      <div className="relative w-full max-w-5xl mx-auto min-h-[420px] sm:min-h-[480px] rounded-[120px] sm:rounded-[200px] bg-gradient-to-b from-emerald-800 via-emerald-950 to-slate-950 border-[16px] sm:border-[24px] border-amber-950 shadow-[inset_0_0_80px_rgba(0,0,0,0.95)] p-4 sm:p-8 flex flex-col justify-between items-center overflow-hidden border-solid ring-2 ring-amber-500/40">
+      {/* REALISTIC COMPACT HIGH-STAKES CASINO POKER TABLE */}
+      <div className="relative w-full mx-auto min-h-[250px] sm:min-h-[320px] md:min-h-[380px] rounded-[50px] sm:rounded-[120px] md:rounded-[160px] bg-gradient-to-b from-emerald-800 via-emerald-950 to-slate-950 border-[8px] sm:border-[16px] md:border-[20px] border-amber-950 shadow-[inset_0_0_60px_rgba(0,0,0,0.95)] p-2 sm:p-4 flex flex-col justify-between items-center overflow-hidden border-solid ring-1 ring-amber-500/40">
         
         {/* Leather Armrest Trim & Gold Felt Line */}
-        <div className="absolute inset-4 rounded-[100px] sm:rounded-[170px] border-2 border-amber-400/30 pointer-events-none" />
+        <div className="absolute inset-2 sm:inset-3 rounded-[40px] sm:rounded-[100px] md:rounded-[140px] border border-amber-400/30 pointer-events-none" />
 
         {/* AI Bots Row (Top/Sides of Felt) */}
-        <div className="w-full flex flex-wrap justify-around items-center pt-2 z-10 gap-y-4">
+        <div className="w-full flex flex-wrap justify-around items-center pt-1 z-10 gap-y-1">
           {players.filter(p => !p.isHuman).map((botPlayer) => {
             const playerIdx = players.findIndex(p => p.id === botPlayer.id);
             return (
-              <div key={botPlayer.id} className="transform scale-90 sm:scale-100">
+              <div key={botPlayer.id} className="transform scale-75 sm:scale-90 md:scale-100">
                 <PlayerSeat
                   player={botPlayer}
                   isTurn={currentTurnIdx === playerIdx}
@@ -393,17 +393,17 @@ export default function PokerTable({ onUpdateBankroll }) {
         </div>
 
         {/* Center Felt: Pot Chip Stacks & 5 Community Cards */}
-        <div className="my-auto flex flex-col items-center space-y-4 z-10 py-6">
+        <div className="my-auto flex flex-col items-center space-y-1.5 sm:space-y-3 z-10 py-1 sm:py-2">
           
           {/* Main Pot Display with Chip Stack */}
-          <div className="bg-slate-950/90 border-2 border-amber-400 px-6 py-2.5 rounded-full shadow-2xl flex items-center space-x-3 transition-transform hover:scale-105">
-            <Coins className="w-6 h-6 text-amber-400 animate-bounce" />
-            <span className="text-xs text-slate-300 font-extrabold uppercase tracking-widest">POT:</span>
-            <span className="text-xl sm:text-2xl font-black text-amber-300">${pot.toLocaleString()}</span>
+          <div className="bg-slate-950/90 border border-amber-400 px-4 py-1 rounded-full shadow-xl flex items-center space-x-2">
+            <Coins className="w-4 h-4 text-amber-400 animate-bounce" />
+            <span className="text-[10px] text-slate-300 font-extrabold uppercase tracking-widest">POT:</span>
+            <span className="text-sm sm:text-base font-black text-amber-300">${pot.toLocaleString()}</span>
           </div>
 
           {/* 5 Community Cards Tray */}
-          <div className="flex items-center space-x-1.5 sm:space-x-3 p-3 sm:p-5 rounded-2xl bg-black/60 border-2 border-emerald-500/40 shadow-2xl backdrop-blur-md min-h-[90px] sm:min-h-[120px]">
+          <div className="flex items-center space-x-1 sm:space-x-2 p-1.5 sm:p-3 rounded-xl bg-black/60 border border-emerald-500/40 shadow-xl backdrop-blur-md">
             {[0, 1, 2, 3, 4].map((idx) => {
               const card = communityCards[idx];
               return (
@@ -411,21 +411,21 @@ export default function PokerTable({ onUpdateBankroll }) {
                   key={idx}
                   card={card}
                   hidden={!card}
-                  size="md"
+                  size="sm"
                 />
               );
             })}
           </div>
 
           {/* Live Action Status Banner */}
-          <div className="text-center w-full max-w-sm px-4 py-2 rounded-xl bg-slate-950/90 border border-amber-500/30 text-xs sm:text-sm font-black text-amber-300 shadow-xl truncate">
+          <div className="text-center w-full max-w-xs px-3 py-1 rounded-lg bg-slate-950/90 border border-amber-500/30 text-[10px] sm:text-xs font-black text-amber-300 shadow-md truncate">
             {gameMessage}
           </div>
         </div>
 
         {/* Hero Player Seat (Bottom of Felt) */}
         {heroPlayer && (
-          <div className="pb-2 z-10 transform scale-105 sm:scale-110">
+          <div className="pb-1 z-10 transform scale-90 sm:scale-100">
             <PlayerSeat
               player={heroPlayer}
               isTurn={currentTurnIdx === 0}
@@ -438,19 +438,19 @@ export default function PokerTable({ onUpdateBankroll }) {
 
       {/* Showdown Next Hand Button */}
       {currentStreet === 'showdown' && (
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center my-1">
           <button
             onClick={() => startNewHand(players, (dealerIdx + 1) % players.length)}
-            className="py-4 px-12 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-black text-sm uppercase tracking-widest shadow-[0_0_30px_rgba(251,191,36,0.6)] hover:scale-110 transition-transform flex items-center space-x-2"
+            className="py-2.5 px-8 rounded-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center space-x-2"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="w-4 h-4" />
             <span>Deal Next Hand ♠</span>
           </button>
         </div>
       )}
 
       {/* Bottom Action Controls & Live Coach */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start max-w-5xl mx-auto w-full mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start max-w-5xl mx-auto w-full">
         {showCoach && heroPlayer && (
           <LiveCoach
             heroCards={heroPlayer.holeCards}

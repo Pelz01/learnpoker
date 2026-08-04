@@ -44,7 +44,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className={`flex-1 max-w-7xl w-full mx-auto ${activeTab === 'poker-table' ? 'p-1 sm:p-3' : 'p-4 sm:p-6 lg:p-8'}`}>
         
         {/* Tab 1: Poker Academy */}
         {activeTab === 'academy' && (
