@@ -183,6 +183,17 @@ export default function PokerTable({ onUpdateBankroll }) {
     advanceTurn(newPlayers, currentTurnIdx, newHighestBet);
   };
 
+  const findNextActivePlayerIdx = (playersList, startIdx) => {
+    for (let i = 0; i < playersList.length; i++) {
+      const candidateIdx = (startIdx + i) % playersList.length;
+      const p = playersList[candidateIdx];
+      if (p && !p.isFolded && !p.isAllIn && p.chipCount > 0) {
+        return candidateIdx;
+      }
+    }
+    return -1;
+  };
+
   const advanceTurn = (currentPlayersList, lastIdx, targetHighestBet) => {
     const activePlayers = currentPlayersList.filter(p => !p.isFolded);
 
@@ -200,11 +211,12 @@ export default function PokerTable({ onUpdateBankroll }) {
     if (isBettingComplete || playersWhoCanAct.length <= 1) {
       progressStreet(currentPlayersList);
     } else {
-      let nextIdx = (lastIdx + 1) % currentPlayersList.length;
-      while (currentPlayersList[nextIdx].isFolded || currentPlayersList[nextIdx].isAllIn || currentPlayersList[nextIdx].chipCount <= 0) {
-        nextIdx = (nextIdx + 1) % currentPlayersList.length;
+      const nextIdx = findNextActivePlayerIdx(currentPlayersList, (lastIdx + 1) % currentPlayersList.length);
+      if (nextIdx === -1) {
+        progressStreet(currentPlayersList);
+      } else {
+        setCurrentTurnIdx(nextIdx);
       }
-      setCurrentTurnIdx(nextIdx);
     }
   };
 
@@ -250,15 +262,18 @@ export default function PokerTable({ onUpdateBankroll }) {
     if (playersWhoCanAct.length <= 1) {
       setTimeout(() => {
         progressStreet(resetBetsList);
-      }, 900);
+      }, 700);
       return;
     }
 
-    let nextIdx = (dealerIdx + 1) % resetBetsList.length;
-    while (resetBetsList[nextIdx].isFolded || resetBetsList[nextIdx].isAllIn || resetBetsList[nextIdx].chipCount <= 0) {
-      nextIdx = (nextIdx + 1) % resetBetsList.length;
+    const nextIdx = findNextActivePlayerIdx(resetBetsList, (dealerIdx + 1) % resetBetsList.length);
+    if (nextIdx === -1) {
+      setTimeout(() => {
+        progressStreet(resetBetsList);
+      }, 700);
+    } else {
+      setCurrentTurnIdx(nextIdx);
     }
-    setCurrentTurnIdx(nextIdx);
   };
 
   const handleShowdown = (activePlayersList, finalCommunity) => {
