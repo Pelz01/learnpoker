@@ -53,7 +53,10 @@ export default function App() {
 
         {/* Tab 2: Play vs AI Computer */}
         {activeTab === 'poker-table' && (
-          <PokerTable onUpdateBankroll={(newBankroll) => setBankroll(newBankroll)} />
+          <PokerTable 
+            onUpdateBankroll={(newBankroll) => setBankroll(newBankroll)}
+            onGoBack={() => setActiveTab('academy')}
+          />
         )}
 
         {/* Tab 3: Interactive Practice Drills */}

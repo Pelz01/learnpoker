@@ -8,10 +8,11 @@ import GameSetupModal from './GameSetupModal';
 import { soundEffects } from '../../utils/audioService';
 import { createDeck, shuffleDeck, evaluate7CardHand } from '../../utils/pokerEvaluator';
 import { makeAiDecision } from '../../utils/aiEngine';
-import { Bot, RefreshCw, Eye, Sparkles, Settings, Coins } from 'lucide-react';
+import { Bot, RefreshCw, Eye, Sparkles, Settings, Coins, Pause, Play, ArrowLeft } from 'lucide-react';
 
-export default function PokerTable({ onUpdateBankroll }) {
+export default function PokerTable({ onUpdateBankroll, onGoBack }) {
   const [setupModalOpen, setSetupModalOpen] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   const [gameConfig, setGameConfig] = useState({
     difficulty: 'hard',
     tableSize: 4,
@@ -332,7 +333,7 @@ export default function PokerTable({ onUpdateBankroll }) {
   };
 
   useEffect(() => {
-    if (currentStreet === 'showdown' || players.length === 0) return;
+    if (isPaused || currentStreet === 'showdown' || players.length === 0) return;
 
     const activePlayer = players[currentTurnIdx];
 
@@ -364,10 +365,10 @@ export default function PokerTable({ onUpdateBankroll }) {
     }
 
     return () => clearTimeout(aiTimeoutRef.current);
-  }, [currentTurnIdx, currentStreet, players]);
+  }, [currentTurnIdx, currentStreet, players, isPaused]);
 
   const heroPlayer = players.find(p => p.isHuman);
-  const isHeroTurn = players[currentTurnIdx]?.isHuman && currentStreet !== 'showdown';
+  const isHeroTurn = players[currentTurnIdx]?.isHuman && currentStreet !== 'showdown' && !isPaused;
 
   return (
     <div className="relative w-full flex flex-col justify-between p-1 sm:p-2 space-y-2 font-sans max-w-5xl mx-auto">
@@ -379,20 +380,43 @@ export default function PokerTable({ onUpdateBankroll }) {
         onClose={() => setSetupModalOpen(false)}
       />
 
-      {/* Top Bar: Table Info & Controls */}
+      {/* Top Bar: Table Info, Go Back & Pause/Play Controls */}
       <div className="flex items-center justify-between gap-1.5 bg-slate-900/90 border border-amber-500/30 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-xl text-xs font-bold text-slate-200">
         <div className="flex items-center space-x-2 text-[11px] sm:text-xs">
+          {/* Go Back / Exit Button */}
+          {onGoBack && (
+            <button
+              onClick={onGoBack}
+              className="px-2 py-1 rounded-lg bg-slate-800 border border-slate-700 text-amber-300 hover:text-amber-200 font-extrabold flex items-center space-x-1"
+              title="Go Back to Academy"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+          )}
+
           <span className="flex items-center gap-1">
             <Bot className="w-3.5 h-3.5 text-amber-400" />
             <strong className="text-amber-300 uppercase font-black">{gameConfig.difficulty}</strong>
           </span>
           <span className="text-slate-700">|</span>
-          <span>Blinds: <strong className="text-emerald-400 font-extrabold">${gameConfig.blinds.sb}/${gameConfig.blinds.bb}</strong></span>
-          <span className="text-slate-700">|</span>
           <span>Pot: <strong className="text-amber-300 font-black">${pot}</strong></span>
         </div>
 
         <div className="flex items-center space-x-1.5">
+          {/* PAUSE / PLAY TOGGLE */}
+          <button
+            onClick={() => setIsPaused(!isPaused)}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center space-x-1 transition-all ${
+              isPaused 
+                ? 'bg-emerald-500 text-slate-950 shadow-lg animate-pulse' 
+                : 'bg-slate-800 text-amber-300 border border-amber-500/30 hover:bg-slate-700'
+            }`}
+          >
+            {isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
+            <span>{isPaused ? 'RESUME' : 'PAUSE'}</span>
+          </button>
+
           <button
             onClick={() => setShowCoach(!showCoach)}
             className={`px-2.5 py-1 rounded-lg text-[11px] font-black flex items-center space-x-1 transition-all ${
@@ -416,6 +440,24 @@ export default function PokerTable({ onUpdateBankroll }) {
       {/* REALISTIC COMPACT HIGH-STAKES CASINO POKER TABLE */}
       <div className="relative w-full mx-auto min-h-[250px] sm:min-h-[320px] md:min-h-[380px] rounded-[50px] sm:rounded-[120px] md:rounded-[160px] bg-gradient-to-b from-emerald-800 via-emerald-950 to-slate-950 border-[8px] sm:border-[16px] md:border-[20px] border-amber-950 shadow-[inset_0_0_60px_rgba(0,0,0,0.95)] p-2 sm:p-4 flex flex-col justify-between items-center overflow-hidden border-solid ring-1 ring-amber-500/40">
         
+        {/* Paused Game Overlay */}
+        {isPaused && (
+          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md z-40 rounded-[40px] sm:rounded-[100px] flex flex-col items-center justify-center space-y-3 p-4">
+            <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xl font-black shadow-lg">
+              ⏸
+            </div>
+            <h3 className="text-lg font-black text-white tracking-wide">GAME PAUSED</h3>
+            <p className="text-xs text-slate-300 text-center max-w-xs">Take your time. The bots are waiting for you.</p>
+            <button
+              onClick={() => setIsPaused(false)}
+              className="px-6 py-2 rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 text-slate-950 font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all flex items-center space-x-2"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>RESUME GAME</span>
+            </button>
+          </div>
+        )}
+
         {/* Leather Armrest Trim & Gold Felt Line */}
         <div className="absolute inset-2 sm:inset-3 rounded-[40px] sm:rounded-[100px] md:rounded-[140px] border border-amber-400/30 pointer-events-none" />
 
