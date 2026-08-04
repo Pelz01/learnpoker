@@ -36,7 +36,7 @@ export function makeAiDecision({
   }
 }
 
-// ---------------- EASY BOT ----------------
+// // ---------------- EASY BOT ----------------
 function easyBotStrategy({ holeCards, communityCards, currentPot, amountToCall, minRaise, chipCount, currentStreet }) {
   // Preflop
   if (currentStreet === 'preflop') {
@@ -45,12 +45,12 @@ function easyBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
     
     // Easy bot calls 70% of the time, raises only top pairs
     if (isPair && holeCards[0].rank >= 10 && amountToCall <= chipCount) {
-      const raiseAmt = Math.min(amountToCall + minRaise, chipCount);
+      const raiseAmt = Math.round(Math.min(amountToCall + minRaise, chipCount));
       return { action: 'raise', amount: raiseAmt, reason: 'Easy bot holding high pair' };
     }
     if ((isPair || isHighCard || Math.random() < 0.4) && amountToCall <= chipCount) {
       if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Easy bot checking preflop' };
-      return { action: 'call', amount: amountToCall, reason: 'Easy bot calling preflop' };
+      return { action: 'call', amount: Math.round(amountToCall), reason: 'Easy bot calling preflop' };
     }
     if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Easy bot checking' };
     return { action: 'fold', amount: 0, reason: 'Easy bot folding weak hand' };
@@ -61,14 +61,14 @@ function easyBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
   
   if (handEval.categoryRank >= 2) { // Two Pair or better
     if (Math.random() < 0.6 && amountToCall <= chipCount) {
-      const raiseAmt = Math.min(amountToCall + minRaise, chipCount);
+      const raiseAmt = Math.round(Math.min(amountToCall + minRaise, chipCount));
       return { action: 'raise', amount: raiseAmt, reason: `Easy bot raising strong hand (${handEval.type})` };
     }
   }
   
   if (handEval.categoryRank >= 1 || Math.random() < 0.35) { // One Pair or high card curiosity
     if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Easy bot checking pair' };
-    if (amountToCall <= chipCount * 0.4) return { action: 'call', amount: amountToCall, reason: 'Easy bot calling postflop' };
+    if (amountToCall <= chipCount * 0.4) return { action: 'call', amount: Math.round(amountToCall), reason: 'Easy bot calling postflop' };
   }
 
   if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Easy bot checking free card' };
@@ -92,13 +92,13 @@ function mediumBotStrategy({ holeCards, communityCards, currentPot, amountToCall
     }
 
     if (isPair && maxRank >= 10) {
-      const raiseAmt = Math.min(Math.max(highestBet * 2.5, minRaise), chipCount);
+      const raiseAmt = Math.round(Math.min(Math.max(highestBet * 2.5, minRaise), chipCount));
       return { action: 'raise', amount: raiseAmt, reason: `Medium bot open-raising strong preflop pair (${r1}'s)` };
     }
 
     if (isPlayable) {
       if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Medium bot checking playable hand' };
-      if (amountToCall <= bigBlind * 4) return { action: 'call', amount: amountToCall, reason: 'Medium bot calling standard raise' };
+      if (amountToCall <= bigBlind * 4) return { action: 'call', amount: Math.round(amountToCall), reason: 'Medium bot calling standard raise' };
     }
 
     if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Medium bot checking' };
@@ -111,19 +111,19 @@ function mediumBotStrategy({ holeCards, communityCards, currentPot, amountToCall
 
   // Strong hand (Equity >= 65%)
   if (winPercent >= 65) {
-    const betSize = Math.min(Math.round(currentPot * 0.6), chipCount);
+    const betSize = Math.round(Math.min(currentPot * 0.6, chipCount));
     if (betSize > amountToCall && chipCount > amountToCall) {
-      const raiseAmt = Math.min(Math.max(amountToCall + minRaise, betSize), chipCount);
+      const raiseAmt = Math.round(Math.min(Math.max(amountToCall + minRaise, betSize), chipCount));
       return { action: 'raise', amount: raiseAmt, reason: `Medium bot value-raising with ${winPercent}% equity` };
     }
     if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Medium bot checking strong hand' };
-    return { action: 'call', amount: amountToCall, reason: `Medium bot calling with ${winPercent}% equity` };
+    return { action: 'call', amount: Math.round(amountToCall), reason: `Medium bot calling with ${winPercent}% equity` };
   }
 
   // Decent hand / Draw (Equity >= Pot Odds Required)
   if (winPercent >= requiredEquity || winPercent >= 40) {
     if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Medium bot checking' };
-    if (amountToCall <= chipCount) return { action: 'call', amount: amountToCall, reason: `Medium bot calling: equity (${winPercent}%) meets pot odds (${requiredEquity}%)` };
+    if (amountToCall <= chipCount) return { action: 'call', amount: Math.round(amountToCall), reason: `Medium bot calling: equity (${winPercent}%) meets pot odds (${requiredEquity}%)` };
   }
 
   if (amountToCall === 0) return { action: 'check', amount: 0, reason: 'Medium bot checking option' };
@@ -149,11 +149,11 @@ function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
     // Premium hands: AA, KK, QQ, JJ, TT, AK, AQ
     const isPremium = (isPair && r1 >= 10) || (maxRank === 14 && minRank >= 12);
     if (isPremium) {
-      const raiseSizing = Math.min(Math.max(bigBlind * 2.5, highestBet * 2.2, minRaise), chipCount + (botCurrentBet || 0));
+      const raiseSizing = Math.round(Math.min(Math.max(bigBlind * 2.5, highestBet * 2.2, minRaise), chipCount + (botCurrentBet || 0)));
       if (raiseSizing > highestBet) {
         return { action: 'raise', amount: raiseSizing, reason: 'Hard AI raising premium preflop hand' };
       }
-      return { action: 'call', amount: amountToCall, reason: 'Hard AI calling preflop with premium' };
+      return { action: 'call', amount: Math.round(amountToCall), reason: 'Hard AI calling preflop with premium' };
     }
 
     // Positional Open Ranges
@@ -168,11 +168,11 @@ function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
 
     if (inOpeningRange) {
       if (highestBet <= bigBlind) {
-        const raiseSizing = Math.min(Math.max(bigBlind * 2.2, minRaise), chipCount);
+        const raiseSizing = Math.round(Math.min(Math.max(bigBlind * 2.2, minRaise), chipCount));
         return { action: 'raise', amount: raiseSizing, reason: `Hard AI opening ${position} range` };
       }
       if (amountToCall <= bigBlind * 3) {
-        return { action: 'call', amount: amountToCall, reason: 'Hard AI calling standard preflop open' };
+        return { action: 'call', amount: Math.round(amountToCall), reason: 'Hard AI calling standard preflop open' };
       }
     }
 
@@ -183,22 +183,22 @@ function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
   // Postflop Strategy
   // 1. FREE TO ACT (amountToCall === 0)
   if (amountToCall === 0) {
-    // Monster hand (Equity >= 75%) -> Value Bet 0.5x Pot
+    // Monster hand (Equity >= 75%) -> Value Bet 0.55x Pot
     if (totalEquity >= 75) {
-      const betSize = Math.min(Math.max(Math.round(currentPot * 0.55), minRaise), chipCount);
+      const betSize = Math.round(Math.min(Math.max(currentPot * 0.55, minRaise), chipCount));
       if (betSize > 0) return { action: 'raise', amount: betSize, reason: `Hard AI value betting monster (${totalEquity.toFixed(0)}% equity)` };
     }
     // Good hand (Equity >= 55%) -> Continuation bet 0.4x pot or check
     if (totalEquity >= 55) {
       if (Math.random() < 0.65) {
-        const cBet = Math.min(Math.max(Math.round(currentPot * 0.4), minRaise), chipCount);
+        const cBet = Math.round(Math.min(Math.max(currentPot * 0.4, minRaise), chipCount));
         if (cBet > 0) return { action: 'raise', amount: cBet, reason: `Hard AI continuation betting (${totalEquity.toFixed(0)}% equity)` };
       }
       return { action: 'check', amount: 0, reason: 'Hard AI checking solid hand' };
     }
     // Semi-bluff with draw (Equity >= 40%) -> 30% chance to semi-bluff raise
     if (totalEquity >= 40 && Math.random() < 0.3) {
-      const bluffAmt = Math.min(Math.max(Math.round(currentPot * 0.45), minRaise), chipCount);
+      const bluffAmt = Math.round(Math.min(Math.max(currentPot * 0.45, minRaise), chipCount));
       if (bluffAmt > 0) return { action: 'raise', amount: bluffAmt, reason: 'Hard AI semi-bluffing strong draw' };
     }
     return { action: 'check', amount: 0, reason: 'Hard AI checking free card' };
@@ -212,17 +212,17 @@ function hardBotStrategy({ holeCards, communityCards, currentPot, amountToCall, 
 
   // Monster hand (Equity >= 75%) -> Raise/Re-raise for value!
   if (totalEquity >= 75) {
-    const raiseAmt = Math.min(Math.max(amountToCall + minRaise, Math.round(currentPot * 0.6)), chipCount);
+    const raiseAmt = Math.round(Math.min(Math.max(amountToCall + minRaise, currentPot * 0.6), chipCount));
     if (raiseAmt > amountToCall && chipCount > amountToCall) {
       return { action: 'raise', amount: raiseAmt, reason: `Hard AI re-raising monster (${totalEquity.toFixed(0)}% equity)` };
     }
-    return { action: 'call', amount: amountToCall, reason: `Hard AI calling with monster (${totalEquity.toFixed(0)}% equity)` };
+    return { action: 'call', amount: Math.round(amountToCall), reason: `Hard AI calling with monster (${totalEquity.toFixed(0)}% equity)` };
   }
 
   // Strong hand or EV positive call (Total Equity >= Pot Odds Required)
   if (totalEquity >= requiredEquity || totalEquity >= 48) {
     if (amountToCall <= chipCount) {
-      return { action: 'call', amount: amountToCall, reason: `Hard AI calling: ${totalEquity.toFixed(0)}% equity meets pot odds (${requiredEquity}%)` };
+      return { action: 'call', amount: Math.round(amountToCall), reason: `Hard AI calling: ${totalEquity.toFixed(0)}% equity meets pot odds (${requiredEquity}%)` };
     }
   }
 

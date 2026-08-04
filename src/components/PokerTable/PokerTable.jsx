@@ -221,7 +221,7 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
       newPlayers[currentTurnIdx].lastAction = 'CHECK';
       actionText = `${player.name} checks.`;
     } else if (action === 'call') {
-      const callAmt = Math.min(amount, player.chipCount);
+      const callAmt = Math.round(Math.min(amount, player.chipCount));
       newPlayers[currentTurnIdx].chipCount -= callAmt;
       newPlayers[currentTurnIdx].currentBet += callAmt;
       newPot += callAmt;
@@ -234,14 +234,14 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
         actionText = `${player.name} calls ALL-IN ($${callAmt})!`;
       }
     } else if (action === 'raise') {
-      const raiseTotal = Math.min(amount, player.chipCount + player.currentBet);
+      const raiseTotal = Math.round(Math.min(amount, player.chipCount + player.currentBet));
       const addedChips = raiseTotal - player.currentBet;
       newPlayers[currentTurnIdx].chipCount -= addedChips;
       newPlayers[currentTurnIdx].currentBet = raiseTotal;
       newPot += addedChips;
 
       newHighestBet = raiseTotal;
-      newMinRaise = raiseTotal + (raiseTotal - highestBet);
+      newMinRaise = Math.round(raiseTotal + (raiseTotal - highestBet));
       newPlayers[currentTurnIdx].lastAction = `RAISE $${raiseTotal}`;
       actionText = `${player.name} raises to $${raiseTotal}!`;
 
@@ -258,9 +258,9 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
     }
 
     setPlayers(newPlayers);
-    setPot(newPot);
-    setHighestBet(newHighestBet);
-    setMinRaise(newMinRaise);
+    setPot(Math.round(newPot));
+    setHighestBet(Math.round(newHighestBet));
+    setMinRaise(Math.round(newMinRaise));
     setGameMessage(actionText);
 
     advanceTurn(newPlayers, currentTurnIdx, newHighestBet);
