@@ -8,7 +8,7 @@ import GameSetupModal from './GameSetupModal';
 import { soundEffects } from '../../utils/audioService';
 import { createDeck, shuffleDeck, evaluate7CardHand } from '../../utils/pokerEvaluator';
 import { makeAiDecision } from '../../utils/aiEngine';
-import { Bot, RefreshCw, Eye, Sparkles, Settings, Coins, Pause, Play, ArrowLeft } from 'lucide-react';
+import { Bot, RefreshCw, Eye, Sparkles, Settings, Coins, Pause, Play, ArrowLeft, Zap } from 'lucide-react';
 
 export default function PokerTable({ onUpdateBankroll, onGoBack }) {
   const [setupModalOpen, setSetupModalOpen] = useState(true);
@@ -34,6 +34,43 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
   const [showCoach, setShowCoach] = useState(true);
 
   const aiTimeoutRef = useRef(null);
+
+  const handleForceTurn = () => {
+    if (currentStreet === 'showdown' || players.length === 0) return;
+    
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current);
+    }
+
+    const activePlayer = players[currentTurnIdx];
+
+    if (!activePlayer || activePlayer.isFolded || activePlayer.isAllIn || activePlayer.chipCount <= 0) {
+      setGameMessage('⚡ Waking game engine: Advancing turn...');
+      advanceTurn(players, currentTurnIdx, highestBet);
+      return;
+    }
+
+    if (!activePlayer.isHuman) {
+      setGameMessage(`⚡ Woke up ${activePlayer.name}! Executing bot turn...`);
+      const decision = makeAiDecision({
+        bot: activePlayer,
+        gameState: {
+          communityCards,
+          currentPot: pot,
+          highestBet,
+          minRaise,
+          activePlayers: players.filter(p => !p.isFolded),
+          bigBlind: gameConfig.blinds.bb,
+          dealerIdx,
+          currentStreet
+        },
+        difficulty: activePlayer.difficulty || gameConfig.difficulty
+      });
+      handlePlayerAction(decision.action, decision.amount);
+    } else {
+      setGameMessage(`⚡ Action is on ${activePlayer.name}. Select an action below.`);
+    }
+  };
 
   const handleStartMatch = (config) => {
     setGameConfig(config);
@@ -424,6 +461,16 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
         </div>
 
         <div className="flex items-center space-x-1.5">
+          {/* WAKE BOT / FORCE TURN BUTTON */}
+          <button
+            onClick={handleForceTurn}
+            className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 text-[11px] font-black flex items-center space-x-1 transition-all shadow"
+            title="Force turn / Wake up bot if game pauses"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400 fill-current" />
+            <span>Wake Bot</span>
+          </button>
+
           {/* PAUSE / PLAY TOGGLE */}
           <button
             onClick={() => setIsPaused(!isPaused)}
