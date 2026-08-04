@@ -627,17 +627,23 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
       )}
 
       {/* Bottom Action Controls & Live Coach */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start max-w-5xl mx-auto w-full">
+      <div className={`w-full max-w-5xl mx-auto ${
+        showCoach 
+          ? 'grid grid-cols-1 md:grid-cols-2 gap-2 items-start' 
+          : 'flex justify-center items-center'
+      }`}>
         {isHeroTurn && heroPlayer && (
-          <ActionControls
-            onAction={handlePlayerAction}
-            amountToCall={highestBet - heroPlayer.currentBet}
-            minRaise={minRaise}
-            maxRaise={heroPlayer.chipCount + heroPlayer.currentBet}
-            currentPot={pot}
-            playerChipCount={heroPlayer.chipCount}
-            canCheck={highestBet === heroPlayer.currentBet}
-          />
+          <div className={showCoach ? 'w-full' : 'w-full max-w-xl mx-auto'}>
+            <ActionControls
+              onAction={handlePlayerAction}
+              amountToCall={highestBet - heroPlayer.currentBet}
+              minRaise={minRaise}
+              maxRaise={heroPlayer.chipCount + heroPlayer.currentBet}
+              currentPot={pot}
+              playerChipCount={heroPlayer.chipCount}
+              canCheck={highestBet === heroPlayer.currentBet}
+            />
+          </div>
         )}
 
         {showCoach && heroPlayer && (
