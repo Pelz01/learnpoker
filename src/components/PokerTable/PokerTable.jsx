@@ -38,22 +38,46 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
   const handleForceTurn = () => {
     if (currentStreet === 'showdown' || players.length === 0) return;
     
+    setIsPaused(false);
+
     if (aiTimeoutRef.current) {
       clearTimeout(aiTimeoutRef.current);
     }
 
-    const activePlayer = players[currentTurnIdx];
-
-    if (!activePlayer || activePlayer.isFolded || activePlayer.isAllIn || activePlayer.chipCount <= 0) {
-      setGameMessage('⚡ Waking game engine: Advancing turn...');
-      advanceTurn(players, currentTurnIdx, highestBet);
+    const activePlayers = players.filter(p => !p.isFolded);
+    if (activePlayers.length <= 1) {
+      handleSinglePlayerWin(activePlayers[0] || players[0]);
       return;
     }
 
-    if (!activePlayer.isHuman) {
-      setGameMessage(`⚡ Woke up ${activePlayer.name}! Executing bot turn...`);
+    const playersWhoCanAct = activePlayers.filter(p => !p.isAllIn && p.chipCount > 0);
+    const isBettingComplete = activePlayers.every(p => 
+      p.isAllIn || (p.hasActed && p.currentBet === highestBet)
+    );
+
+    if (isBettingComplete || playersWhoCanAct.length <= 1) {
+      setGameMessage('⚡ Waking engine: Advancing street...');
+      progressStreet(players);
+      return;
+    }
+
+    let targetIdx = currentTurnIdx;
+    const activePlayer = players[targetIdx];
+    if (!activePlayer || activePlayer.isFolded || activePlayer.isAllIn || activePlayer.chipCount <= 0) {
+      targetIdx = findNextActivePlayerIdx(players, (currentTurnIdx + 1) % players.length);
+      if (targetIdx === -1) {
+        progressStreet(players);
+        return;
+      }
+      setCurrentTurnIdx(targetIdx);
+    }
+
+    const validPlayer = players[targetIdx];
+
+    if (validPlayer && !validPlayer.isHuman) {
+      setGameMessage(`⚡ Woke up ${validPlayer.name}! Executing turn...`);
       const decision = makeAiDecision({
-        bot: activePlayer,
+        bot: validPlayer,
         gameState: {
           communityCards,
           currentPot: pot,
@@ -64,11 +88,11 @@ export default function PokerTable({ onUpdateBankroll, onGoBack }) {
           dealerIdx,
           currentStreet
         },
-        difficulty: activePlayer.difficulty || gameConfig.difficulty
+        difficulty: validPlayer.difficulty || gameConfig.difficulty
       });
       handlePlayerAction(decision.action, decision.amount);
     } else {
-      setGameMessage(`⚡ Action is on ${activePlayer.name}. Select an action below.`);
+      setGameMessage(`⚡ Woke turn: Action is on You (Hero)! Select your action below.`);
     }
   };
 
