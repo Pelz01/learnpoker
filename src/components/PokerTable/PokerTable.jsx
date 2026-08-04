@@ -177,23 +177,24 @@ export default function PokerTable({ onUpdateBankroll }) {
   const advanceTurn = (currentPlayersList, lastIdx, targetHighestBet) => {
     const activePlayers = currentPlayersList.filter(p => !p.isFolded);
 
-    if (activePlayers.length === 1) {
-      handleSinglePlayerWin(activePlayers[0]);
+    if (activePlayers.length <= 1) {
+      handleSinglePlayerWin(activePlayers[0] || currentPlayersList[0]);
       return;
     }
 
-    let nextIdx = (lastIdx + 1) % currentPlayersList.length;
-    while (currentPlayersList[nextIdx].isFolded) {
-      nextIdx = (nextIdx + 1) % currentPlayersList.length;
-    }
+    const playersWhoCanAct = activePlayers.filter(p => !p.isAllIn && p.chipCount > 0);
 
-    const isBettingComplete = currentPlayersList.every(p => 
-      p.isFolded || p.isAllIn || p.currentBet === targetHighestBet
+    const isBettingComplete = activePlayers.every(p => 
+      p.isAllIn || p.currentBet === targetHighestBet
     );
 
-    if (isBettingComplete) {
+    if (isBettingComplete || playersWhoCanAct.length <= 1) {
       progressStreet(currentPlayersList);
     } else {
+      let nextIdx = (lastIdx + 1) % currentPlayersList.length;
+      while (currentPlayersList[nextIdx].isFolded || currentPlayersList[nextIdx].isAllIn || currentPlayersList[nextIdx].chipCount <= 0) {
+        nextIdx = (nextIdx + 1) % currentPlayersList.length;
+      }
       setCurrentTurnIdx(nextIdx);
     }
   };
@@ -233,8 +234,19 @@ export default function PokerTable({ onUpdateBankroll }) {
       return;
     }
 
+    const activePlayers = resetBetsList.filter(p => !p.isFolded);
+    const playersWhoCanAct = activePlayers.filter(p => !p.isAllIn && p.chipCount > 0);
+
+    // Auto-progress remaining streets if everyone is all-in
+    if (playersWhoCanAct.length <= 1) {
+      setTimeout(() => {
+        progressStreet(resetBetsList);
+      }, 900);
+      return;
+    }
+
     let nextIdx = (dealerIdx + 1) % resetBetsList.length;
-    while (resetBetsList[nextIdx].isFolded) {
+    while (resetBetsList[nextIdx].isFolded || resetBetsList[nextIdx].isAllIn || resetBetsList[nextIdx].chipCount <= 0) {
       nextIdx = (nextIdx + 1) % resetBetsList.length;
     }
     setCurrentTurnIdx(nextIdx);
@@ -299,7 +311,14 @@ export default function PokerTable({ onUpdateBankroll }) {
     if (currentStreet === 'showdown' || players.length === 0) return;
 
     const activePlayer = players[currentTurnIdx];
-    if (activePlayer && !activePlayer.isHuman && !activePlayer.isFolded && !activePlayer.isAllIn) {
+
+    // Safety fallback: if turn lands on folded or all-in player, skip turn immediately
+    if (activePlayer && (activePlayer.isFolded || activePlayer.isAllIn || activePlayer.chipCount <= 0)) {
+      advanceTurn(players, currentTurnIdx, highestBet);
+      return;
+    }
+
+    if (activePlayer && !activePlayer.isHuman) {
       aiTimeoutRef.current = setTimeout(() => {
         const decision = makeAiDecision({
           bot: activePlayer,
@@ -317,7 +336,7 @@ export default function PokerTable({ onUpdateBankroll }) {
         });
 
         handlePlayerAction(decision.action, decision.amount);
-      }, 1100);
+      }, 900);
     }
 
     return () => clearTimeout(aiTimeoutRef.current);
